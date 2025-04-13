@@ -10,7 +10,8 @@ const HomePage = {
         vehicles: [],
         currentVehicle: null,
         recentQueries: [],
-        showVehicleDropdown: false, // Added state for dropdown visibility
+        showVehicleDropdown: false,
+        deletingVehicleId: null,
         isLoading: true,
         error: null
     },
@@ -19,12 +20,12 @@ const HomePage = {
     eventListeners: {
         addVehicle: null,
         changeVehicle: null,
-        dropdownClick: null, // Listener for clicks within dropdown
-        clickOutside: null, // Listener for clicks outside dropdown
+        dropdownClick: null,
+        clickOutside: null,
         newQuery: null,
         searchByPhoto: null,
-        viewAllQueries: null
-        // Removed edit/delete from here as they are handled inside dropdownClick
+        viewAllQueries: null,
+        tempSeed: null
     },
     
     // Debug logging function
@@ -356,10 +357,25 @@ const HomePage = {
         `;
     },
     
-    // Added function to render the new vehicle dropdown menu
+    // Added helper function
+    updateState: function(newState) {
+        const oldState = { ...this.state }; 
+        this.state = { ...this.state, ...newState };
+        this.debug('State updated', { /* oldState: oldState, */ currentState: this.state });
+
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            this.renderPage(mainContent);
+            this.setupEventListeners(); 
+        } else {
+            console.error("Cannot re-render, mainContent not found.");
+        }
+    },
+    
+    // Modified function
     renderVehicleDropdownMenu: function() {
-        if (!this.state.showVehicleDropdown) return ''; // Don't render if hidden
-        this.debug('Rendering vehicle dropdown menu', { vehicles: this.state.vehicles });
+        if (!this.state.showVehicleDropdown) return ''; 
+        this.debug('Rendering vehicle dropdown menu', { vehicles: this.state.vehicles, deleting: this.state.deletingVehicleId });
         
         const safeText = (text) => text ? String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
         
@@ -368,13 +384,14 @@ const HomePage = {
                 <div class="vehicles-list">
                     ${this.state.vehicles.map(v => {
                         const vName = `${safeText(v.make)} ${safeText(v.model)} (${safeText(v.year)})`;
-                        return `
-                        <div class="vehicle-dropdown-item ${v.id === this.state.currentVehicle?.id ? 'selected' : ''}" 
-                             data-vehicle-id="${safeText(v.id)}">
-                            <div class="vehicle-item-info">
-                                <span>${vName}</span>
-                                ${v.isDefault ? '<span class="default-badge-small">Əsas</span>' : ''}
+                        const isDeleting = this.state.deletingVehicleId === v.id; // Check if this item is deleting
+
+                        // Conditionally render actions or spinner
+                        const actionsHTML = isDeleting ? `
+                            <div class="vehicle-item-actions loading">
+                                <div class="small-spinner"></div> 
                             </div>
+                        ` : `
                             <div class="vehicle-item-actions">
                                  <button class="icon-button edit-vehicle-dropdown-btn" title="Redaktə et" data-vehicle-id="${safeText(v.id)}" type="button">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg> 
@@ -383,11 +400,21 @@ const HomePage = {
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg>
                                  </button>
                              </div>
+                        `;
+
+                        return `
+                        <div class="vehicle-dropdown-item ${v.id === this.state.currentVehicle?.id ? 'selected' : ''} ${isDeleting ? 'is-deleting' : ''}" 
+                             data-vehicle-id="${safeText(v.id)}">
+                            <div class="vehicle-item-info">
+                                <span>${vName}</span>
+                                ${v.isDefault ? '<span class="default-badge-small">Əsas</span>' : ''}
+                            </div>
+                            ${actionsHTML} 
                         </div>
                     `;
                     }).join('')}
                 </div>
-                <button id="addNewVehicleDropdownBtn" class="button add-new-vehicle-dropdown-btn" type="button">
+                <button id="addNewVehicleDropdownBtn" class="button add-new-vehicle-dropdown-btn" type="button" ${this.state.deletingVehicleId ? 'disabled' : ''}>
                     <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -645,9 +672,13 @@ const HomePage = {
 
     deleteVehicle: async function(vehicleId) {
         this.debug('Attempting to delete vehicle', { vehicleId });
-        // Basic loading indication (optional)
-        TelegramService.showMainButtonProgress && TelegramService.showMainButtonProgress(); 
         
+        // --- SET LOADING STATE ---
+        this.updateState({ deletingVehicleId: vehicleId }); 
+        
+        // Hide any Telegram progress bar if shown previously
+        TelegramService.hideMainButtonProgress && TelegramService.hideMainButtonProgress(); 
+
         try {
              const initData = TelegramService.getInitDataString();
              if (!initData) {
@@ -657,25 +688,25 @@ const HomePage = {
                   throw new Error("Firebase Functions not initialized.");
              }
              
-            // Assume deleteVehicle function exists and takes { vehicleId, initData }
             const deleteVehicleFunc = firebase.functions().httpsCallable('deleteVehicle'); 
             const result = await deleteVehicleFunc({ vehicleId: vehicleId, initData: initData });
             this.debug('deleteVehicle function result:', result.data);
             
             if (result.data && result.data.success) {
                  TelegramService.showAlert('Avtomobil uğurla silindi.');
-                 // Refresh the home page data fully
+                 // Refresh the home page data fully (will reset deleting state via show())
                  await this.show(); 
+                 // Return early as show() handles final state
+                 return; 
             } else {
                  throw new Error(result.data?.error || 'Avtomobili silmək mümkün olmadı.');
             }
         } catch (error) {
             console.error("Error deleting vehicle:", error);
             TelegramService.showAlert(`Xəta baş verdi: ${error.message}`);
-        } finally {
-             // Hide loading indicator
-             TelegramService.hideMainButtonProgress && TelegramService.hideMainButtonProgress();
-        }
+            // --- RESET LOADING STATE ON ERROR ---
+            this.updateState({ deletingVehicleId: null }); 
+        } 
     },
     
     // Event listenerləri təmizlə (New Version)
@@ -692,7 +723,6 @@ const HomePage = {
                  document.removeEventListener(event, listenerRef);
                  this.debug('Removed document listener', { event });
             }
-            // else { this.debug('Listener or element not found for cleanup', { elementId, event, selector, hasRef: !!listenerRef }); }
         };
 
         removeListener('addVehicleBtn', 'click', this.eventListeners.addVehicle);
@@ -702,6 +732,7 @@ const HomePage = {
         removeListener('newQueryBtn', 'click', this.eventListeners.newQuery);
         removeListener('searchByPhotoBtn', 'click', this.eventListeners.searchByPhoto);
         removeListener('viewAllQueriesBtn', 'click', this.eventListeners.viewAllQueries);
+        removeListener('tempSeedDataBtn', 'click', this.eventListeners.tempSeed); // <-- Add cleanup for temp button if exists
         
         // Clear all refs
         Object.keys(this.eventListeners).forEach(key => {

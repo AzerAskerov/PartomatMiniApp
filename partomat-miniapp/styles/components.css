@@ -502,3 +502,45 @@
     color: var(--tg-theme-hint-color);
     font-size: 0.9rem;
 }
+
+/* Style for vehicle item being deleted */
+.vehicle-dropdown-item.is-deleting .vehicle-item-info {
+    opacity: 0.6; /* Dim the item */
+    pointer-events: none; /* Prevent clicking info while deleting */
+}
+
+.vehicle-dropdown-item .vehicle-item-actions.loading {
+    /* Ensure spinner container takes up space similar to buttons */
+    min-width: 56px; /* Adjust to roughly match 2 icon buttons + gap */
+    display: flex; /* Enable flex for centering */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Optional: Disable add new button while deleting */
+.add-new-vehicle-dropdown-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: transparent !important; /* Keep background transparent */
+}
+
+/* --- General Components (Ensure spinner is defined) --- */
+
+/* Basic Spinner (if not already defined elsewhere) */
+.small-spinner {
+  border: 3px solid var(--tg-theme-secondary-bg-color, #f3f4f6); /* Light grey */
+  border-top: 3px solid var(--tg-theme-button-color, #2563eb); /* Blue */
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Style for small empty state in recent queries */
+/* ... existing empty-state-small style ... */
