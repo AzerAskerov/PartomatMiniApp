@@ -186,3 +186,332 @@ exports.registerUser = functions.https.onCall(async (data, context) => {
     );
   }
 });
+
+// --- Vehicle Management Functions ---
+
+// Get all vehicles for a user
+exports.getUserVehicles = functions.https.onCall(async (data, context) => {
+  const initDataString = data.initData;
+  const functionsConfig = functions.config();
+  const botToken = functionsConfig.telegram && functionsConfig.telegram.token;
+
+  if (!botToken) {
+    console.error("Bot token is not configured.");
+    throw new functions.https.HttpsError(
+      "internal",
+      "Server configuration error."
+    );
+  }
+
+  const validationResult = validateTelegramData(initDataString, botToken);
+  if (!validationResult.valid || !(validationResult.data.user && validationResult.data.user.id)) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Invalid authentication data."
+    );
+  }
+
+  const telegramUserId = String(validationResult.data.user.id);
+
+  try {
+    const vehiclesSnapshot = await db.collection('vehicles')
+      .where('telegramUserId', '==', telegramUserId)
+      .get();
+
+    const vehicles = [];
+    vehiclesSnapshot.forEach(doc => {
+      vehicles.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    return {
+      success: true,
+      vehicles: vehicles
+    };
+  } catch (error) {
+    console.error('Error getting user vehicles:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Could not get user vehicles.'
+    );
+  }
+});
+
+// Get a specific vehicle
+exports.getVehicle = functions.getVehicle = functions.https.onCall(async (data, context) => {
+  const { vehicleId, initData } = data;
+  const functionsConfig = functions.config();
+  const botToken = functionsConfig.telegram && functionsConfig.telegram.token;
+
+  if (!botToken) {
+    console.error("Bot token is not configured.");
+    throw new functions.https.HttpsError(
+      "internal",
+      "Server configuration error."
+    );
+  }
+
+  const validationResult = validateTelegramData(initData, botToken);
+  if (!validationResult.valid || !(validationResult.data.user && validationResult.data.user.id)) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Invalid authentication data."
+    );
+  }
+
+  const telegramUserId = String(validationResult.data.user.id);
+
+  if (!vehicleId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Vehicle ID is required.'
+    );
+  }
+
+  try {
+    const vehicleDoc = await db.collection('vehicles').doc(vehicleId).get();
+    
+    if (!vehicleDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'Vehicle not found.'
+      );
+    }
+
+    const vehicleData = vehicleDoc.data();
+    if (vehicleData.telegramUserId !== telegramUserId) {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'You do not have permission to access this vehicle.'
+      );
+    }
+
+    return {
+      success: true,
+      vehicle: {
+        id: vehicleDoc.id,
+        ...vehicleData
+      }
+    };
+  } catch (error) {
+    console.error('Error getting vehicle:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Could not get vehicle.'
+    );
+  }
+});
+
+// Save vehicle (create or update)
+exports.saveVehicle = functions.https.onCall(async (data, context) => {
+  const { vehicleId, vehicleData, initData } = data;
+  const functionsConfig = functions.config();
+  const botToken = functionsConfig.telegram && functionsConfig.telegram.token;
+
+  if (!botToken) {
+    console.error("Bot token is not configured.");
+    throw new functions.https.HttpsError(
+      "internal",
+      "Server configuration error."
+    );
+  }
+
+  const validationResult = validateTelegramData(initData, botToken);
+  if (!validationResult.valid || !(validationResult.data.user && validationResult.data.user.id)) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Invalid authentication data."
+    );
+  }
+
+  const telegramUserId = String(validationResult.data.user.id);
+
+  if (!vehicleData || !vehicleData.make || !vehicleData.model || !vehicleData.year) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Vehicle data is incomplete.'
+    );
+  }
+
+  try {
+    const vehicleRef = vehicleId 
+      ? db.collection('vehicles').doc(vehicleId)
+      : db.collection('vehicles').doc();
+
+    // Check if updating existing vehicle
+    if (vehicleId) {
+      const existingVehicle = await vehicleRef.get();
+      if (!existingVehicle.exists) {
+        throw new functions.https.HttpsError(
+          'not-found',
+          'Vehicle not found.'
+        );
+      }
+      if (existingVehicle.data().telegramUserId !== telegramUserId) {
+        throw new functions.https.HttpsError(
+          'permission-denied',
+          'You do not have permission to update this vehicle.'
+        );
+      }
+    }
+
+    // Handle photo upload if present
+    let photoUrl = vehicleData.passportPhoto;
+    if (photoUrl && photoUrl.startsWith('data:')) {
+      // Convert base64 to buffer
+      const base64Data = photoUrl.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      
+      // Generate unique filename
+      const filename = `vehicles/${telegramUserId}/${vehicleRef.id}/passport.jpg`;
+      
+      // Upload to Firebase Storage
+      const bucket = admin.storage().bucket();
+      const file = bucket.file(filename);
+      
+      await file.save(imageBuffer, {
+        metadata: {
+          contentType: 'image/jpeg',
+        },
+      });
+      
+      // Get signed URL
+      const [url] = await file.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2500', // Long expiration
+      });
+      
+      photoUrl = url;
+    }
+
+    // Prepare vehicle data
+    const vehicleToSave = {
+      telegramUserId,
+      make: vehicleData.make,
+      model: vehicleData.model,
+      year: vehicleData.year,
+      passportPhoto: photoUrl,
+      isDefault: vehicleData.isDefault || false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // If this is a new vehicle, add createdAt
+    if (!vehicleId) {
+      vehicleToSave.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    // If setting as default, update other vehicles
+    if (vehicleToSave.isDefault) {
+      const batch = db.batch();
+      
+      // Update this vehicle
+      batch.set(vehicleRef, vehicleToSave, { merge: true });
+      
+      // Update other vehicles to not be default
+      const otherVehicles = await db.collection('vehicles')
+        .where('telegramUserId', '==', telegramUserId)
+        .where('isDefault', '==', true)
+        .get();
+      
+      otherVehicles.forEach(doc => {
+        if (doc.id !== vehicleRef.id) {
+          batch.update(doc.ref, { isDefault: false });
+        }
+      });
+      
+      await batch.commit();
+    } else {
+      await vehicleRef.set(vehicleToSave, { merge: true });
+    }
+
+    return {
+      success: true,
+      vehicleId: vehicleRef.id
+    };
+  } catch (error) {
+    console.error('Error saving vehicle:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Could not save vehicle.'
+    );
+  }
+});
+
+// Delete vehicle
+exports.deleteVehicle = functions.https.onCall(async (data, context) => {
+  const { vehicleId, initData } = data;
+  const functionsConfig = functions.config();
+  const botToken = functionsConfig.telegram && functionsConfig.telegram.token;
+
+  if (!botToken) {
+    console.error("Bot token is not configured.");
+    throw new functions.https.HttpsError(
+      "internal",
+      "Server configuration error."
+    );
+  }
+
+  const validationResult = validateTelegramData(initData, botToken);
+  if (!validationResult.valid || !(validationResult.data.user && validationResult.data.user.id)) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Invalid authentication data."
+    );
+  }
+
+  const telegramUserId = String(validationResult.data.user.id);
+
+  if (!vehicleId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Vehicle ID is required.'
+    );
+  }
+
+  try {
+    const vehicleRef = db.collection('vehicles').doc(vehicleId);
+    const vehicleDoc = await vehicleRef.get();
+
+    if (!vehicleDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'Vehicle not found.'
+      );
+    }
+
+    if (vehicleDoc.data().telegramUserId !== telegramUserId) {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'You do not have permission to delete this vehicle.'
+      );
+    }
+
+    // Delete vehicle document
+    await vehicleRef.delete();
+
+    // Delete associated photo if exists
+    const photoUrl = vehicleDoc.data().passportPhoto;
+    if (photoUrl) {
+      try {
+        const bucket = admin.storage().bucket();
+        const filename = `vehicles/${telegramUserId}/${vehicleId}/passport.jpg`;
+        await bucket.file(filename).delete();
+      } catch (error) {
+        console.error('Error deleting vehicle photo:', error);
+        // Continue even if photo deletion fails
+      }
+    }
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    console.error('Error deleting vehicle:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Could not delete vehicle.'
+    );
+  }
+});

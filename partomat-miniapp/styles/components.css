@@ -1,0 +1,504 @@
+/* components.css - Styles for reusable UI components */
+
+/* Dropdown Component */
+.dropdown {
+    position: relative; /* Needed for absolute positioning of the menu */
+    width: 100%;
+}
+
+.dropdown-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 10px 12px;
+    background-color: var(--tg-theme-bg-color);
+    border: 1px solid var(--tg-theme-section-separator-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--tg-theme-text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.dropdown-button:hover {
+    border-color: var(--tg-theme-hint-color);
+}
+
+.dropdown-button:focus {
+    outline: none;
+    border-color: var(--tg-theme-button-color);
+    box-shadow: 0 0 0 2px rgba(var(--tg-theme-button-rgb), 0.2); /* Optional focus ring */
+}
+
+.dropdown-button.disabled,
+.dropdown-button:disabled {
+    background-color: var(--tg-theme-secondary-bg-color);
+    color: var(--tg-theme-hint-color);
+    cursor: not-allowed;
+    border-color: var(--tg-theme-section-separator-color);
+}
+
+.dropdown-button span {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px; /* Space between text and icon */
+}
+
+.dropdown-button svg {
+    flex-shrink: 0; /* Prevent icon from shrinking */
+    width: 16px;
+    height: 16px;
+    color: var(--tg-theme-hint-color);
+    transition: transform 0.2s ease;
+}
+
+.dropdown-button.open svg {
+     transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px); /* Position below the button with a small gap */
+    left: 0;
+    width: 100%;
+    background-color: var(--tg-theme-bg-color);
+    border: 1px solid var(--tg-theme-section-separator-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it's above other content */
+    max-height: 200px; /* Limit height and allow scrolling */
+    overflow-y: auto;
+    padding: 4px 0; /* Padding inside the menu */
+    display: block; /* Will be controlled by JS adding/removing the element or a class */
+}
+
+/* Style for when the menu should be hidden (add/remove this class via JS) */
+.dropdown-menu.hidden {
+    display: none;
+}
+
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    color: var(--tg-theme-text-color);
+    cursor: pointer;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-item:hover {
+    background-color: var(--tg-theme-secondary-bg-color);
+}
+
+.dropdown-item.selected {
+    font-weight: 600;
+    color: var(--tg-theme-button-color); /* Highlight selected item */
+}
+
+/* Form Group specific adjustments */
+.form-group .dropdown {
+    margin-top: 4px; /* Add some space below the label */
+}
+
+/* --- Other Components --- */
+
+/* Add styles for other components like buttons, inputs, cards etc. here */
+
+/* Example: General Button */
+.button {
+    display: inline-block;
+    padding: 10px 16px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+}
+
+.button:hover {
+    opacity: 0.9;
+}
+
+.button:active {
+   opacity: 0.8;
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Icon Button (like header/back buttons) */
+.icon-button {
+    background: none;
+    border: none;
+    padding: 4px; /* Adjust padding for click area */
+    cursor: pointer;
+    color: var(--tg-theme-hint-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; /* Make it circular if desired */
+    transition: background-color 0.2s ease;
+}
+
+.icon-button:hover {
+    color: var(--tg-theme-text-color);
+    background-color: rgba(0, 0, 0, 0.05); /* Subtle background on hover */
+}
+
+.icon-button svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Back Button Specific */
+.back-button {
+    /* Inherits from icon-button, add specific margins if needed */
+    margin-right: 8px;
+}
+
+/* Toggle Button */
+.toggle-button {
+    position: relative;
+    display: inline-block;
+    width: 44px; /* Width of the toggle */
+    height: 24px; /* Height of the toggle */
+    background-color: var(--tg-theme-secondary-bg-color);
+    border-radius: 12px; /* Make it rounded */
+    border: 1px solid var(--tg-theme-section-separator-color);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-button .toggle-handle {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px; /* Size of the handle */
+    height: 18px;
+    background-color: white;
+    border-radius: 50%; /* Circular handle */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.toggle-button[aria-pressed="true"] {
+    background-color: var(--tg-theme-button-color);
+    border-color: var(--tg-theme-button-color);
+}
+
+.toggle-button[aria-pressed="true"] .toggle-handle {
+    transform: translateX(20px); /* Move handle to the right */
+}
+
+/* Image Upload */
+.image-upload-container {
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between preview and button */
+}
+
+.image-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--tg-theme-section-separator-color);
+    position: relative;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-photo-button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1;
+}
+.remove-photo-button svg {
+    width: 10px;
+    height: 10px;
+}
+
+
+.image-upload-button {
+    display: flex;
+    flex-direction: column; /* Stack icon and text */
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border: 2px dashed var(--tg-theme-hint-color);
+    border-radius: 8px;
+    background-color: var(--tg-theme-secondary-bg-color);
+    color: var(--tg-theme-hint-color);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    text-align: center;
+}
+
+.image-upload-button:hover {
+    border-color: var(--tg-theme-button-color);
+    background-color: var(--tg-theme-bg-color); /* Lighten background slightly */
+}
+
+.image-upload-button svg {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px; /* Space between icon and text */
+}
+
+.image-upload-button span {
+    font-size: 0.8rem;
+}
+
+.upload-hint {
+    font-size: 0.85rem;
+    color: var(--tg-theme-hint-color);
+    margin-top: 8px;
+}
+
+/* --- Specific Component Styles --- */
+
+/* Vehicle Selector Dropdown (Home Page) */
+.vehicle-selector {
+    position: relative; /* Needed for absolute positioning of the menu */
+    background-color: var(--tg-theme-bg-color); /* Match card background */
+    /* No border/radius here, it's part of the card */
+    margin: -1px; /* Adjust slightly if needed for borders */
+}
+
+.vehicle-selector-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px; /* Adjust padding */
+    cursor: pointer;
+    width: 100%;
+    background: none;
+    border: none;
+    border-radius: 8px; /* Give the button rounded corners */
+    text-align: left;
+    transition: background-color 0.1s ease;
+}
+.vehicle-selector-button:hover {
+    background-color: rgba(var(--tg-theme-text-rgb, 0, 0, 0), 0.03); /* Subtle hover */
+}
+
+
+.vehicle-selector-button .vehicle-info {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Increased gap */
+    flex-grow: 1; /* Allow info to take space */
+    overflow: hidden; /* Prevent long names overflowing */
+}
+
+.vehicle-selector-button .vehicle-icon {
+    color: var(--tg-theme-hint-color);
+    flex-shrink: 0;
+}
+
+.vehicle-selector-button .vehicle-details {
+    line-height: 1.3;
+    overflow: hidden; /* Prevent long names overflowing */
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vehicle-selector-button .vehicle-label {
+    font-size: 0.8rem;
+    color: var(--tg-theme-hint-color);
+    margin: 0 0 2px 0; /* Small margin bottom */
+}
+
+.vehicle-selector-button .vehicle-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--tg-theme-text-color);
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vehicle-selector-arrow {
+    color: var(--tg-theme-hint-color);
+    transition: transform 0.2s ease;
+    margin-left: 8px; /* Space before arrow */
+    flex-shrink: 0;
+}
+
+.vehicle-selector.open .vehicle-selector-arrow {
+    transform: rotate(180deg);
+}
+.vehicle-selector.open .vehicle-selector-button {
+    /* Optional: style when dropdown is open */
+     background-color: rgba(var(--tg-theme-text-rgb, 0, 0, 0), 0.04);
+     border-bottom-left-radius: 0; /* Flatten bottom corners when open */
+     border-bottom-right-radius: 0;
+}
+
+
+.vehicle-dropdown-menu {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 100%; /* Position directly below the button */
+    left: 0;
+    right: 0; /* Make it full width of the container */
+    background-color: var(--tg-theme-bg-color); /* Use main bg */
+    border: 1px solid var(--tg-theme-divider-color);
+    border-top: none; /* Remove top border as it connects to button */
+    border-bottom-left-radius: 8px; /* Round bottom corners */
+    border-bottom-right-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    max-height: 300px; 
+    overflow-y: auto;
+    padding: 8px; 
+}
+
+.vehicle-selector.open .vehicle-dropdown-menu {
+    display: block; /* Show when open */
+}
+
+.vehicle-dropdown-menu .vehicles-list {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--tg-theme-divider-color);
+}
+
+.vehicle-dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    margin-bottom: 2px; /* Small space between items */
+}
+
+.vehicle-dropdown-item:hover {
+    background-color: var(--tg-theme-secondary-bg-color); /* Use secondary for hover */
+}
+
+.vehicle-dropdown-item.selected {
+    background-color: rgba(var(--tg-theme-button-rgb), 0.1); /* Subtle blue tint for selected */
+}
+/* Style selected text slightly bolder if needed */
+.vehicle-dropdown-item.selected .vehicle-item-info span {
+     font-weight: 500; 
+     /* color: var(--tg-theme-button-color); */ /* Optionally make text blue */
+}
+
+
+.vehicle-dropdown-item .vehicle-item-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    flex-grow: 1;
+    overflow: hidden;
+    margin-right: 8px;
+}
+.vehicle-dropdown-item .vehicle-item-info span {
+     color: var(--tg-theme-text-color);
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+}
+
+.default-badge-small {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--tg-theme-button-color);
+    margin-top: 2px;
+}
+
+
+.vehicle-dropdown-item .vehicle-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+.vehicle-dropdown-item .vehicle-item-actions .icon-button {
+    color: var(--tg-theme-hint-color);
+    padding: 4px;
+}
+.vehicle-dropdown-item .vehicle-item-actions .icon-button:hover {
+    color: var(--tg-theme-text-color);
+    background-color: transparent; /* Override default icon button hover */
+}
+.vehicle-dropdown-item .vehicle-item-actions .delete-vehicle-dropdown-btn:hover {
+    color: var(--tg-theme-destructive-text-color);
+}
+
+
+.add-new-vehicle-dropdown-btn {
+    width: 100%;
+    margin-top: 0; /* Removed top margin */
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 500;
+    /* Use secondary button style */
+    background-color: transparent;
+    color: var(--tg-theme-button-color);
+    border: none;
+    /* border: 1px solid var(--tg-theme-button-color); */
+    border-radius: 6px;
+}
+.add-new-vehicle-dropdown-btn:hover {
+     background-color: rgba(var(--tg-theme-button-rgb), 0.1);
+     opacity: 1.0; /* Override default button hover opacity if needed */
+}
+.add-new-vehicle-dropdown-btn .button-icon {
+     width: 16px;
+     height: 16px;
+     stroke-width: 2.5; /* Make plus thicker */
+}
+
+/* Style for small empty state in recent queries */
+.empty-state-small {
+    text-align: center;
+    padding: 16px;
+    color: var(--tg-theme-hint-color);
+    font-size: 0.9rem;
+}

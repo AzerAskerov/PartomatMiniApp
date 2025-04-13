@@ -192,8 +192,26 @@ const TelegramService = {
          }
     },
     
+    // Show loading progress on the main button
+    showMainButtonProgress: function(leaveActive = false) {
+        if (!this.tg || !this.tg.MainButton.isVisible) return;
+        this.tg.MainButton.showProgress(!leaveActive); // Pass true to keep it non-clickable
+        if (leaveActive) {
+            this.tg.MainButton.enable();
+        } else {
+            this.tg.MainButton.disable();
+        }
+    },
+
+    // Hide loading progress on the main button
+    hideMainButtonProgress: function() {
+        if (!this.tg || !this.tg.MainButton.isVisible) return;
+        this.tg.MainButton.hideProgress();
+        this.tg.MainButton.enable(); // Re-enable after progress
+    },
+    
     // HapticFeedback - dokunma vibrasiyası
-    hapticImpact: function(style) {
+    hapticImpact: function(style = 'medium') {
         // style: light, medium, heavy, rigid, soft
         if (this.tg && this.tg.HapticFeedback) {
            this.tg.HapticFeedback.impactOccurred(style || 'medium');

@@ -332,6 +332,9 @@ const PartoMatApp = {
                 case 'home':
                     if (typeof HomePage !== 'undefined') HomePage.show(); else throw new Error('HomePage missing');
                     break;
+                case 'add-vehicle':
+                    if (typeof AddVehiclePage !== 'undefined') AddVehiclePage.show(); else throw new Error('AddVehiclePage missing');
+                    break;
                 case 'history':
                     // Placeholder - Replace with HistoryPage.show() later
                     mainContent.innerHTML = `<div style="padding: 20px;"><h1>Tarixçə</h1><p>Keçmiş sorğularınız burada göstəriləcək.</p></div>`; 
